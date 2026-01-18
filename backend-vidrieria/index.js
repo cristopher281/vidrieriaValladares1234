@@ -2,13 +2,18 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const { createClient } = require('@supabase/supabase-js');
+const multer = require('multer');
 
 const app = express();
 const port = process.env.PORT || 3000;
 
 // --- 1. CONFIGURACIÓN ---
-app.use(cors()); 
+app.use(cors());
 app.use(express.json());
+
+// Configuración de Multer (Almacenamiento en memoria para subir a Supabase)
+const storage = multer.memoryStorage();
+const upload = multer({ storage: storage });
 
 // Verificación de variables de entorno
 if (!process.env.SUPABASE_URL || !process.env.SUPABASE_KEY) {
@@ -16,89 +21,71 @@ if (!process.env.SUPABASE_URL || !process.env.SUPABASE_KEY) {
   process.exit(1);
 }
 
-// Conexión a Supabase
+// Cliente "Admin" original (para lecturas públicas)
 const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_KEY
 );
 
-// --- 2. UTILIDADES ---
+// --- 2. MIDDLEWARES & UTILIDADES ---
 
 /**
- * Procesa enlaces de Google Drive para intentar obtener una URL directa de imagen.
- * NOTA: Google Drive tiene límites de tasa. Para producción, se recomienda Supabase Storage.
+ * Middleware de Autenticación (Supabase Auth)
+ * Verifica que el usuario tenga un token válido (JWT).
  */
-const processDriveLink = (originalLink) => {
-  if (!originalLink) return null;
+const requireAuth = async (req, res, next) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader) {
+    return res.status(401).json({ error: 'Falta el encabezado de autorización (Token)' });
+  }
+
+  const token = authHeader.split(' ')[1];
+  if (!token) {
+    return res.status(401).json({ error: 'Token no proporcionado' });
+  }
+
   try {
-    // Soporta formatos completos y IDs directos
-    const idMatch = originalLink.match(/\/d\/([a-zA-Z0-9_-]+)/) || originalLink.match(/^([a-zA-Z0-9_-]+)$/);
-    
-    if (!idMatch || !idMatch[1]) return null;
+    const { data: { user }, error } = await supabase.auth.getUser(token);
 
-    const fileId = idMatch[1];
-    return `https://drive.google.com/uc?export=view&id=${fileId}`;
+    if (error || !user) {
+      throw new Error('Token inválido o expirado');
+    }
+
+    req.user = user; // Guardar usuario en la petición
+    next();
   } catch (error) {
-    return null;
+    return res.status(401).json({ error: 'No autorizado: ' + error.message });
   }
-};
-
-/**
- * Middleware de seguridad simple
- * En el futuro, usar autenticación real (Supabase Auth).
- * Por ahora, pediremos un header 'x-admin-secret' para escribir datos.
- */
-const requireAdmin = (req, res, next) => {
-  // Puedes poner una clave secreta en tu .env como ADMIN_SECRET
-  // Si no existe, permitimos el paso (Modo desarrollo inseguro)
-  const adminSecret = process.env.ADMIN_SECRET;
-  if (!adminSecret) return next(); 
-
-  const providedSecret = req.headers['x-admin-secret'];
-  if (providedSecret !== adminSecret) {
-    return res.status(403).json({ error: 'No autorizado. Se requiere clave de administrador.' });
-  }
-  next();
 };
 
 // --- 3. RUTAS (ENDPOINTS) ---
 
 app.get('/', (req, res) => {
-  res.send('API de Vidriería Valladares - Estado: Activo 🟢');
+  res.send('API de Vidriería Valladares - Estado: Activo 🟢 (Modo Seguro)');
 });
 
-/**
- * GET /api/products
- * Soporta filtros: ?category=espejos
- */
+// GET Publico
 app.get('/api/products', async (req, res) => {
   try {
     const { category } = req.query;
-    
     let query = supabase
       .from('products')
       .select('*')
       .eq('is_active', true)
       .order('created_at', { ascending: false });
 
-    // Aplicar filtro si existe categoría
     if (category) {
-      query = query.ilike('category', `%${category}%`); // Búsqueda flexible (case insensitive)
+      query = query.ilike('category', `%${category}%`);
     }
 
     const { data, error } = await query;
-
     if (error) throw error;
     res.json(data);
   } catch (error) {
-    res.status(500).json({ error: 'Error al obtener productos: ' + error.message });
+    res.status(500).json({ error: error.message });
   }
 });
 
-/**
- * GET /api/products/:id
- * Obtener un solo producto por ID
- */
 app.get('/api/products/:id', async (req, res) => {
   try {
     const { id } = req.params;
@@ -110,7 +97,6 @@ app.get('/api/products/:id', async (req, res) => {
 
     if (error) throw error;
     if (!data) return res.status(404).json({ error: 'Producto no encontrado' });
-
     res.json(data);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -118,33 +104,66 @@ app.get('/api/products/:id', async (req, res) => {
 });
 
 /**
- * POST /api/products
- * Crear nuevo producto
+ * POST /api/products (Protegido + Upload)
+ * Sube imagen a Supabase Storage y crea el registro.
+ * Espera: multipart/form-data
+ * Campos: name, price, description, category, image (archivo)
  */
-app.post('/api/products', requireAdmin, async (req, res) => {
-  const { name, description, price, category, driveLink } = req.body;
+app.post('/api/products', requireAuth, upload.single('image'), async (req, res) => {
+  const { name, description, price, category } = req.body;
+  const file = req.file;
 
-  // Validaciones
   if (!name || !price) {
     return res.status(400).json({ error: 'Nombre y Precio son obligatorios.' });
   }
-  if (parseFloat(price) <= 0) {
-    return res.status(400).json({ error: 'El precio debe ser mayor a 0.' });
-  }
 
-  const directImageUrl = processDriveLink(driveLink);
+  let finalImageUrl = null;
 
   try {
-    const { data, error } = await supabase
+    // 1. Crear cliente con contexto de usuario (para respetar RLS si fuera necesario)
+    // O usar el token para pasar autenticación.
+    // Nota: Si las políticas de Storage son "Authenticated", necesitamos pasar el token.
+    const userSupabase = createClient(
+      process.env.SUPABASE_URL,
+      process.env.SUPABASE_KEY,
+      { global: { headers: { Authorization: req.headers.authorization } } }
+    );
+
+    // 2. Subir Imagen (si existe)
+    if (file) {
+      const fileExt = file.originalname.split('.').pop();
+      const fileName = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}.${fileExt}`;
+      const filePath = `public/${fileName}`;
+
+      const { data: uploadData, error: uploadError } = await userSupabase.storage
+        .from('products')
+        .upload(filePath, file.buffer, {
+          contentType: file.mimetype,
+          upsert: false
+        });
+
+      if (uploadError) throw uploadError;
+
+      // Obtener URL Publica
+      const { data: urlData } = supabase.storage
+        .from('products')
+        .getPublicUrl(filePath);
+
+      finalImageUrl = urlData.publicUrl;
+    }
+
+    // 3. Crear Registro en Base de Datos
+    // Usamos 'userSupabase' para que el INSERT también sea autenticado
+    const { data, error } = await userSupabase
       .from('products')
       .insert([
-        { 
-          name, 
-          description, 
-          price: parseFloat(price), 
-          category: category || 'General', 
-          image_url: directImageUrl,
-          original_drive_link: driveLink
+        {
+          name,
+          description,
+          price: parseFloat(price),
+          category: category || 'General',
+          image_url: finalImageUrl,
+          // original_drive_link ya no es necesario, pero lo dejamos null
         }
       ])
       .select();
@@ -153,17 +172,18 @@ app.post('/api/products', requireAdmin, async (req, res) => {
     res.status(201).json({ message: 'Producto creado', product: data[0] });
 
   } catch (error) {
+    console.error(error);
     res.status(500).json({ error: error.message });
   }
 });
 
 /**
- * PUT /api/products/:id
- * Actualizar producto (Precio, Stock, Info)
+ * PUT /api/products/:id (Protegido)
  */
-app.put('/api/products/:id', requireAdmin, async (req, res) => {
+app.put('/api/products/:id', requireAuth, upload.single('image'), async (req, res) => {
   const { id } = req.params;
-  const { name, description, price, category, driveLink, is_active } = req.body;
+  const { name, description, price, category, is_active } = req.body;
+  const file = req.file;
 
   const updates = {};
   if (name) updates.name = name;
@@ -171,13 +191,37 @@ app.put('/api/products/:id', requireAdmin, async (req, res) => {
   if (price) updates.price = parseFloat(price);
   if (category) updates.category = category;
   if (is_active !== undefined) updates.is_active = is_active;
-  if (driveLink) {
-    updates.original_drive_link = driveLink;
-    updates.image_url = processDriveLink(driveLink);
-  }
 
   try {
-    const { data, error } = await supabase
+    const userSupabase = createClient(
+      process.env.SUPABASE_URL,
+      process.env.SUPABASE_KEY,
+      { global: { headers: { Authorization: req.headers.authorization } } }
+    );
+
+    // Si hay nueva imagen, subirla y actualizar URL
+    if (file) {
+      const fileExt = file.originalname.split('.').pop();
+      const fileName = `${Date.now()}_${id}.${fileExt}`;
+      const filePath = `public/${fileName}`;
+
+      const { error: uploadError } = await userSupabase.storage
+        .from('products')
+        .upload(filePath, file.buffer, {
+          contentType: file.mimetype,
+          upsert: true
+        });
+
+      if (uploadError) throw uploadError;
+
+      const { data: urlData } = supabase.storage
+        .from('products')
+        .getPublicUrl(filePath);
+
+      updates.image_url = urlData.publicUrl;
+    }
+
+    const { data, error } = await userSupabase
       .from('products')
       .update(updates)
       .eq('id', id)
@@ -191,16 +235,20 @@ app.put('/api/products/:id', requireAdmin, async (req, res) => {
 });
 
 /**
- * DELETE /api/products/:id
- * Eliminado lógico (solo desactiva el producto, no lo borra de la BD)
- * Esto es más seguro para mantener historial de ventas.
+ * DELETE /api/products/:id (Protegido)
  */
-app.delete('/api/products/:id', requireAdmin, async (req, res) => {
+app.delete('/api/products/:id', requireAuth, async (req, res) => {
   const { id } = req.params;
   try {
-    const { data, error } = await supabase
+    const userSupabase = createClient(
+      process.env.SUPABASE_URL,
+      process.env.SUPABASE_KEY,
+      { global: { headers: { Authorization: req.headers.authorization } } }
+    );
+
+    const { data, error } = await userSupabase
       .from('products')
-      .update({ is_active: false }) // Soft Delete
+      .update({ is_active: false })
       .eq('id', id)
       .select();
 
@@ -212,5 +260,5 @@ app.delete('/api/products/:id', requireAdmin, async (req, res) => {
 });
 
 app.listen(port, () => {
-  console.log(`✅ Servidor Vidriería Valladares corriendo en puerto ${port}`);
+  console.log(`✅ Servidor Vidriería Valladares (Seguro + Storage) corriendo en puerto ${port}`);
 });

@@ -1,54 +1,57 @@
-# Manual del Futuro: Subida de Imágenes con Supabase Storage
+# Manual de Administrador: Gestión de Productos
 
-Este documento describe cómo funcionará el sistema para el Administrador una vez que se implemente la mejora de **Supabase Storage**.
-
----
-
-## 1. Comparativa de Métodos
-
-| Característica | Método Actual (Google Drive) | Método Futuro (Supabase Storage) |
-| :--- | :--- | :--- |
-| **Acción Principal** | Copiar y Pegar Enlace | Clic y Seleccionar Archivo |
-| **Pasos Requeridos** | 5 pasos (Foto -> Drive -> Permisos -> Copiar -> Pegar) | 3 pasos (Clic -> Seleccionar -> Guardar) |
-| **Dependencia** | Requiere cuenta de Google y gestión manual de permisos. | Todo ocurre dentro de tu página web. |
-| **Riesgo de Error** | Alto (olvidar ponerlo público, copiar mal el link). | Nulo (el sistema lo maneja todo). |
+Este documento describe el proceso para gestionar productos con el nuevo sistema de **Supabase Storage**.
 
 ---
 
-## 2. Flujo de Trabajo del Administrador (Futuro)
+## 1. Nuevo Flujo de Trabajo
 
-Una vez implementada la mejora, esto es lo único que tendrás que hacer para crear un producto con imagen:
+El sistema ahora funciona de manera intuitiva, eliminando la necesidad de usar Google Drive.
+
+| Característica | Sistema |
+| :--- | :--- |
+| **Acción** | Subida Directa (Clic y Seleccionar) |
+| **Almacenamiento** | Nube de Supabase (Privado y Seguro) |
+| **Seguridad** | Requiere inicio de sesión (Token Seguro) |
+
+---
+
+## 2. Pasos para Crear un Producto
 
 ### Paso 1: Ingresar al Panel
-Entras a tu página de administración como siempre.
+Inicias sesión en tu aplicación. El sistema te identificará de forma segura.
 
 ### Paso 2: Llenar Datos
-Escribes el nombre, precio y descripción del producto.
+Ingresas la información básica:
+*   Nombre del Producto
+*   Precio
+*   Descripción
+*   Categoría
 
-### Paso 3: Seleccionar Imagen (El Cambio Principal)
-En lugar de ver una caja de texto para pegar un link "raro", verás un botón o un área que dice:
-> **"Subir Imagen del Producto"**
-> *Arrastra tu imagen aquí o haz clic para buscarla*
-
-1.  Haces **Clic** en ese botón.
-2.  Se abre la ventana de archivos de tu computadora o celular.
-3.  Seleccionas la foto del producto.
+### Paso 3: Subir la Imagen
+En el formulario verás un botón para cargar la foto.
+1.  Haces clic en **"Seleccionar Imagen"**.
+2.  Eliges la foto desde tu computadora o celular.
+3.  **Listo.** No necesitas hacer nada más.
 
 ### Paso 4: Guardar
-Presionas "Crear Producto".
-*   **Automáticamente:** Una barra de carga aparecerá mientras la imagen se sube a la nube segura.
-*   Al finalizar (1-2 segundos), el producto aparecerá listo en tu catálogo.
+Al presionar "Crear":
+1.  La imagen se sube automáticamente a la nube.
+2.  El producto se registra en la base de datos.
+3.  Aparece inmediatamente en el catálogo público.
 
 ---
 
-## 3. Requisitos para Lograrlo
-Para que esto sea una realidad, el programador (o tú siguiendo la guía técnica) debe realizar los siguientes cambios en la página web (Frontend):
+## 3. Notas para el Desarrollador (Frontend)
 
-1.  **Eliminar Intermediarios:** Quitar el campo de texto `driveLink`.
-2.  **Añadir Selector:** Agregar un componente `<input type="file" />` que permita elegir archivos JPG/PNG.
-3.  **Conexión:** Conectar ese selector con la función de subida que ya está habilitada en el Backend (ver `improvement_guide.md`).
+Para habilitar esta experiencia en la interfaz visual, asegúrate de:
+1.  Usar un `<input type="file" />` en el formulario.
+2.  Enviar los datos al backend usando `FormData`.
+3.  Incluir el Token de acceso del usuario en los headers (`Authorization: Bearer ...`).
 
 ---
 
-**Resumen:**
-El cambio transforma la gestión de la vidriería de un proceso manual y técnico a una experiencia fluida tipo "Red Social".
+**Estado del Sistema:**
+✅ Backend: **Listo y Seguro**
+✅ Base de Datos: **Lista y Segura**
+⏳ Frontend: **Pendiente de Actualización** (requiere cambios visuales)

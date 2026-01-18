@@ -1,99 +1,58 @@
-# Plan de Mejoras: Supabase Storage y Auth
+# Bitácora de Implementación: Supabase Storage y Auth
 
-Este documento detalla los pasos técnicos necesarios para migrar de soluciones temporales a una arquitectura más robusta utilizando las capacidades nativas de Supabase.
-
----
-
-## 1. Migración a Supabase Storage (Imágenes)
-
-**Objetivo:** Reemplazar el uso de enlaces de Google Drive por un almacenamiento de imágenes optimizado y escalable, mejorando la velocidad de carga (CDN) y la gestión de archivos.
-
-### Pasos de Implementación
-
-#### A. Configuración en Supabase Dashboard
-1.  Ir a la sección **Storage** del panel de Supabase.
-2.  Crear un nuevo **Bucket** llamado `products`.
-3.  Configurarlo como **Public Bucket** (para que las imágenes sean accesibles vía URL sin firmar cada petición).
-4.  Establecer políticas de acceso (RLS Policies):
-    *   **SELECT (Read):** Permitir a todo público (`anon`).
-    *   **INSERT/UPDATE/DELETE:** Permitir solo a usuarios autenticados (ver sección Auth).
-
-#### B. Modificaciones en el Backend (`index.js`)
-1.  **Dependencias:** Si se planea subir archivos desde el backend, instalar `multer` para procesar `multipart/form-data`.
-    ```bash
-    npm install multer
-    ```
-2.  **Lógica de Subida:**
-    *   Crear una función que reciba el archivo (buffer) y lo suba al bucket:
-        ```javascript
-        const { data, error } = await supabase.storage
-          .from('products')
-          .upload(`public/${fileName}`, fileBuffer, { contentType: fileMimeType });
-        ```
-    *   Construir la URL pública:
-        ```javascript
-        const { data } = supabase.storage.from('products').getPublicUrl(`public/${fileName}`);
-        const publicUrl = data.publicUrl;
-        ```
-3.  **Actualizar Endpoint `POST /api/products`:**
-    *   Cambiar la recepción de `driveLink` a recepción de un archivo.
-    *   Guardar `publicUrl` en el campo `image_url` de la base de datos (ignorar `original_drive_link`).
+Este documento certifica que se han completado las siguientes mejoras técnicas para migrar a una arquitectura robusta y segura.
 
 ---
 
-## 2. Implementación de Supabase Auth (Seguridad)
+## 1. Migración a Supabase Storage (Imágenes) ✅ COMPLETADO
 
-**Objetivo:** Reemplazar la clave compartida (`ADMIN_SECRET`) por un sistema de autenticación real basado en usuarios (JWT), permitiendo roles y mayor seguridad.
+**Estado:** Implementado y Activo.
+**Descripción:** Se ha reemplazado el sistema de enlaces de Google Drive por el almacenamiento nativo de Supabase.
 
-### Pasos de Implementación
+### Cambios Realizados
 
-#### A. Configuración en Supabase Dashboard
-1.  Ir a la sección **Authentication**.
-2.  En **Providers**, asegurar que **Email** esté habilitado.
-3.  Desactivar "Allow new users to sign up" si solo tú serás el administrador, o implementar una lógica para aprobar nuevos admins.
-4.  Crear tu usuario administrador manualmente desde la tabla de usuarios o registrándote una vez y luego cerró el registro.
+#### A. En Supabase
+1.  **Bucket Creado:** Se creó un bucket "public" llamado `products`.
+2.  **Políticas (RLS):**
+    *   **Lectura:** Pública (todos pueden ver imágenes).
+    *   **Escritura:** Restringida solo a usuarios autenticados.
 
-#### B. Modificaciones en el Backend (`index.js`)
+#### B. En el Backend
+1.  **Dependencia:** Se instaló `multer` para procesar archivos.
+2.  **Lógica:**
+    *   El endpoint `POST` ahora recibe archivos físicos.
+    *   Sube el archivo al bucket `products` de Supabase.
+    *   Genera y guarda la URL pública automáticamente en la base de datos.
 
-1.  **Nuevo Middleware de Autenticación:**
-    Reemplazar la función actual `requireAdmin` por una que verifique el Token JWT enviado por el cliente.
+---
 
-    ```javascript
-    const requireAuth = async (req, res, next) => {
-      // 1. Obtener el token del header (Authorization: Bearer <token>)
-      const authHeader = req.headers.authorization;
-      if (!authHeader) return res.status(401).json({ error: 'Token no proporcionado' });
+## 2. Implementación de Supabase Auth (Seguridad) ✅ COMPLETADO
 
-      const token = authHeader.split(' ')[1];
+**Estado:** Implementado y Activo.
+**Descripción:** Se eliminó la clave compartida (`ADMIN_SECRET`) en favor de tokens JWT de usuario.
 
-      // 2. Verificar el usuario con Supabase
-      const { data: { user }, error } = await supabase.auth.getUser(token);
+### Cambios Realizados
 
-      if (error || !user) {
-        return res.status(401).json({ error: 'Token inválido o expirado' });
-      }
+#### A. En Supabase
+1.  **Tablas Protegidas:** Se activó RLS (Row Level Security) en la tabla `products`.
+2.  **Reglas estrictas:**
+    *   `SELECT`: Público.
+    *   `INSERT/UPDATE/DELETE`: Solo usuarios con rol `authenticated`.
 
-      // (Opcional) Verificar si el usuario tiene rol de 'admin' si decides usar roles.
-      
-      req.user = user; // Guardar usuario en la request
-      next();
-    };
-    ```
+#### B. En el Backend
+1.  **Middleware `requireAuth`:**
+    *   Verifica que cada petición venga con el header `Authorization: Bearer <TOKEN>`.
+    *   Valida la firma del token con Supabase antes de permitir cualquier cambio.
 
-2.  **Proteger Rutas:**
-    Aplicar `requireAuth` en las rutas de escritura:
-    *   `app.post('/api/products', requireAuth, ...)`
-    *   `app.put('/api/products/:id', requireAuth, ...)`
-    *   `app.delete('/api/products/:id', requireAuth, ...)`
+---
 
-3.  **Endpoint de Login (Opcional en Backend):**
-    Generalmente el Login se hace en el Frontend directamente con Supabase Client. El Frontend obtiene el token y se lo envía al Backend en cada petición.
-    *   *Si decides hacerlo todo vía API:* Crear `POST /api/login` que reciba email/password y use `supabase.auth.signInWithPassword`.
+## 3. Resumen Técnico
 
-### Resumen de Impacto
-
-| Característica | Estado Actual | Estado Propuesto (Mejorado) |
+| Módulo | Antes | Ahora (Implementado) |
 | :--- | :--- | :--- |
-| **Imágenes** | Depende de Google Drive (lento, rate limits). | Hospedadas en Supabase CDN (rápido, optimizado). |
-| **Seguridad** | Clave única compartida en `.env`. | Usuarios individuales, Tokens JWT, revocación de acceso. |
-| **Escalabilidad** | Baja. Riesgo de bloqueo si crece el tráfico. | Alta. Arquitectura estándar de la industria. |
+| **Imágenes** | Copiar/Pegar Link de Drive | Subida directa de archivo (`multipart/form-data`) |
+| **Autenticación** | Clave secreta estática | Token dinámico por usuario (JWT) |
+| **Seguridad DB** | Dependía del backend | Forzada a nivel de base de datos (RLS) |
+
+> [!IMPORTANT]
+> Para que la aplicación web funcione con estos cambios, el **Frontend debe ser actualizado** para enviar el token de sesión y los archivos como `FormData`.

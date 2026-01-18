@@ -1,94 +1,96 @@
 # Documentación del Backend y Base de Datos - Vidriería Valladares
 
-## 1. Descripción General
-Este backend es una API RESTful construida con **Node.js** y **Express**, que se conecta a una base de datos **Supabase (PostgreSQL)**. Su función principal es gestionar el catálogo de productos de la vidriería.
+## 1. Descripción Técnica
+
+Este backend es una API RESTful diseñada para ser segura, escalable y eficiente.
+*   **Lenguaje:** Node.js
+*   **Framework:** Express.js
+*   **Base de Datos:** Supabase (PostgreSQL)
+*   **Almacenamiento:** Supabase Storage (Buckets S3-compatible)
+
+### Dependencias y Librerías
+Lista de tecnologías instaladas en el proyecto (`package.json`):
+
+| Librería | Versión Aprox. | Propósito |
+| :--- | :--- | :--- |
+| **express** | `^5.2.1` | Motor principal del servidor web y manejo de rutas. |
+| **@supabase/supabase-js** | `^2.90.1` | SDK oficial para conectar con la base de datos y Auth de Supabase. |
+| **multer** | `^1.4.5` | Middleware para manejar la subir archivos (`multipart/form-data`). |
+| **cors** | `^2.8.5` | Permite peticiones desde el navegador (Frontend). |
+| **dotenv** | `^17.2.3` | Carga variables de entorno (secretos) desde `.env`. |
+| **nodemon** | `^3.1.11` | (Dev) Reinicia el servidor automáticamente al guardar cambios. |
+
+---
 
 ## 2. Configuración y Entorno
+
 El servidor corre por defecto en el puerto `3000`.
 Requiere un archivo `.env` con las siguientes variables:
 
 | Variable | Descripción |
 | :--- | :--- |
 | `SUPABASE_URL` | URL del proyecto Supabase. |
-| `SUPABASE_KEY` | Clave API pública (anon/public) de Supabase. |
-| `ADMIN_SECRET` | (Opcional) Clave secreta para proteger las rutas de escritura (POST, PUT, DELETE). |
+| `SUPABASE_KEY` | Clave API pública (anon/public). **Nota:** El backend usa esta clave pero escala privilegios usando el Token del usuario. |
 
-> [!WARNING]
-> Si `ADMIN_SECRET` no está configurado, el sistema entra en "Modo de desarrollo inseguro" y permite modificaciones sin autenticación.
+---
 
-## 3. Base de Datos (Supabase)
-**Proyecto:** `cristopher281's Project` (ID: `gwctixepteuhmalkudlx`)
-**Estado:** Activo
+## 3. Seguridad y Autenticación
 
-### Esquema de Tablas
+El sistema implementa un modelo de seguridad "Zero Trust" en el backend:
 
-#### Tabla: `products`
-Esta tabla almacena todo el catálogo. Actualmente contiene **0 registros**.
+1.  **Sin Clave Maestra:** Ya no se usa `ADMIN_SECRET`.
+2.  **Tokens JWT:** Para crear, editar o borrar, el Frontend **debe** enviar el Token de sesión del usuario de Supabase.
+3.  **Validación:** El middleware `requireAuth` verifica:
+    *   Que el header `Authorization: Bearer <token>` exista.
+    *   Que el token sea válido y no haya expirado (consultando a Supabase Auth).
 
-| Columna | Tipo | Restricciones | Descripción |
-| :--- | :--- | :--- | :--- |
-| `id` | `bigint` | **PK**, Identity | Identificador único del producto. |
-| `created_at` | `timestamptz` | Default `now()` | Fecha de creación. |
-| `name` | `text` | Not Null | Nombre del producto. |
-| `description` | `text` | Nullable | Descripción detallada. |
-| `price` | `numeric` | Not Null | Precio del producto. |
-| `category` | `text` | - | Categoría (ej: "Espejos", "Ventanas"). |
-| `image_url` | `text` | - | URL directa de la imagen (procesada para Drive). |
-| `original_drive_link` | `text` | Nullable | Link original de Google Drive (si aplica). |
-| `is_active` | `boolean` | Default `true` | Indica si el producto es visible (Soft Delete). |
+### Base de Datos (RLS)
+Las políticas de seguridad (Row Level Security) en Supabase están activas:
+*   **Lectura (SELECT):** Pública (cualquiera puede ver productos).
+*   **Escritura (INSERT/UPDATE/DELETE):** Restringida solo a usuarios autenticados.
+
+---
 
 ## 4. API Endpoints
 
-### Público
-
-#### `GET /`
-- **Descripción**: Verifica el estado de la API.
-- **Respuesta**: `"API de Vidriería Valladares - Estado: Activo 🟢"`
+### 🟢 Rutas Públicas
 
 #### `GET /api/products`
-- **Descripción**: Obtiene la lista de productos activos.
-- **Query Params**:
-    - `category`: (Opcional) Filtra por categoría (búsqueda flexible).
-- **Ejemplo**: `/api/products?category=espejos`
+Obtiene el catálogo.
+*   **Query Params**: `?category=espejos` (opcional).
 
 #### `GET /api/products/:id`
-- **Descripción**: Obtiene los detalles de un producto específico.
+Obtiene un producto por su ID.
 
-### Privado (Requiere Admin)
-Estas rutas requieren el header `x-admin-secret` si `ADMIN_SECRET` está configurado.
+---
 
-#### `POST /api/products`
-- **Descripción**: Crea un nuevo producto.
-- **Body JSON**:
-  ```json
-  {
-    "name": "Espejo Decorativo",
-    "description": "Espejo con marco de madera",
-    "price": 150.00,
-    "category": "Espejos",
-    "driveLink": "https://drive.google.com/..."
-  }
-  ```
-- **Nota**: Convierte automáticamente enlaces de Google Drive a URLs directas.
+### 🔒 Rutas Privadas (Admin)
+**Requisito:** Header `Authorization: Bearer <TOKEN_SUPABASE>`
 
-#### Guía para Administradores: Imágenes desde Google Drive
-El sistema permite al administrador "subir" imágenes pegando el enlace de Google Drive.
-1. **Subir imagen a Drive**: Sube la foto del producto a tu Google Drive.
-2. **Compartir públicamente**: 
-   - Clic derecho en la imagen > Compartir.
-   - En "Acceso general", cambiar a **"Cualquier persona con el enlace"**.
-3. **Copiar enlace**: Copia el enlace y pégalo en el campo `driveLink` al crear el producto.
-   - Formato soportado: `https://drive.google.com/file/d/12345abcde.../view...`
-4. **Validación**: El sistema extraerá automáticamente el ID `12345abcde...` y generará una imagen visible para la web.
+#### `POST /api/products` (Crear Producto)
+Sube una imagen y crea el registro.
 
-#### `PUT /api/products/:id`
-- **Descripción**: Actualiza un producto existente.
-- **Body JSON**: Campos a actualizar (`name`, `price`, `is_active`, etc.).
+*   **Tipo de Contenido:** `multipart/form-data` (No JSON)
+*   **Campos del Formulario:**
+    *   `name` (Texto, Requerido)
+    *   `price` (Número, Requerido)
+    *   `description` (Texto)
+    *   `category` (Texto)
+    *   `image` (Archivo/Binario) -> **Se sube a Supabase Storage**
 
-#### `DELETE /api/products/:id`
-- **Descripción**: Elimina un producto lógicamente (Soft Delete).
-- **Acción**: Establece `is_active = false`. El producto no se borra de la base de datos.
+#### `PUT /api/products/:id` (Editar Producto)
+Actualiza datos o cambia la imagen.
 
-## 5. Notas Adicionales
-- **Imágenes**: El sistema está diseñado para procesar enlaces de Google Drive. Se recomienda usar Supabase Storage en producción para mejorar el rendimiento.
-- **Autenticación**: Actualmente es básica (clave compartida). Se sugiere implementar Supabase Auth para un panel de administración real.
+*   **Tipo de Contenido:** `multipart/form-data`
+*   **Campos:** Cualquiera de los anteriores. Si se envía `image`, se reemplaza la anterior.
+
+#### `DELETE /api/products/:id` (Eliminar)
+Desactiva el producto (Soft Delete).
+
+*   **Respuesta:** `200 OK`
+
+---
+
+## 5. Historial de Cambios
+*   **Fase 1 (Legacy):** Imágenes por Google Drive links y Auth por contraseña simple.
+*   **Fase 2 (Actual):** Migración completa a Supabase Storage (imágenes nativas) y Supabase Auth (seguridad por Token).
