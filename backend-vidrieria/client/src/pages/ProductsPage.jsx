@@ -35,39 +35,46 @@ const ProductsPage = () => {
   }, [selectedCategory, products]);
 
   return (
-    <div className="container mx-auto px-6 py-12">
-      <h1 className="text-3xl font-bold text-gray-800 mb-8 text-center">Nuestros Productos</h1>
+    <div className="container mx-auto px-6 py-24 min-h-screen">
+      <div className="text-center mb-12">
+        <h1 className="text-5xl font-display font-bold text-white tracking-wider drop-shadow-lg mb-4 text-glow">
+          CATÁLOGO
+        </h1>
+        <p className="text-xl text-slate-300 font-light font-sans tracking-wide">
+          Explora nuestra colección de cristal premium
+        </p>
+      </div>
 
       {/* Category Filter */}
-      <div className="flex justify-center space-x-4 mb-8">
+      <div className="flex flex-wrap justify-center gap-4 mb-16">
         <button
           onClick={() => setSelectedCategory('All')}
-          className={`px-4 py-2 rounded-md font-semibold transition ${
-            selectedCategory === 'All'
-              ? 'bg-gold-medium text-white'
-              : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-          }`}
+          className={`px-6 py-2.5 rounded-full font-medium tracking-wider transition-all duration-300 border ${selectedCategory === 'All'
+              ? 'bg-cyan-ice text-slate-900 border-cyan-ice shadow-neon scale-105'
+              : 'bg-white/5 text-slate-300 border-white/10 hover:bg-white/10 hover:border-white/30'
+            }`}
         >
-          Todos
+          TODOS
         </button>
         {CATEGORIES.map((category) => (
           <button
             key={category}
             onClick={() => setSelectedCategory(category)}
-            className={`px-4 py-2 rounded-md font-semibold transition ${
-              selectedCategory === category
-                ? 'bg-gold-medium text-white'
-                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-            }`}
+            className={`px-6 py-2.5 rounded-full font-medium tracking-wider transition-all duration-300 border ${selectedCategory === category
+                ? 'bg-cyan-ice text-slate-900 border-cyan-ice shadow-neon scale-105'
+                : 'bg-white/5 text-slate-300 border-white/10 hover:bg-white/10 hover:border-white/30'
+              }`}
           >
-            {category}
+            {category.toUpperCase()}
           </button>
         ))}
       </div>
 
       {/* Product Grid */}
       {loading ? (
-        <p className="text-center">Cargando productos...</p>
+        <div className="flex justify-center items-center h-64">
+          <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-cyan-ice"></div>
+        </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
           {filteredProducts.length > 0 ? (
@@ -75,9 +82,11 @@ const ProductsPage = () => {
               <ProductCard key={product.id} product={product} />
             ))
           ) : (
-            <p className="text-center col-span-full">
-              No se encontraron productos en esta categoría.
-            </p>
+            <div className="col-span-full text-center py-12 glass-panel rounded-2xl">
+              <p className="text-2xl text-slate-300 font-light">
+                No se encontraron productos en esta categoría.
+              </p>
+            </div>
           )}
         </div>
       )}

@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { getProducts } from '../services/api';
 import ProductCard from '../components/ProductCard';
-import Button from '../components/Button';
 
 const HomePage = () => {
   const [featuredProducts, setFeaturedProducts] = useState([]);
@@ -19,44 +18,59 @@ const HomePage = () => {
 
   return (
     <>
-      {/* Hero Section */}
-      <div className="bg-gray-800 text-white">
-        <div className="container mx-auto px-6 py-24 text-center">
-          <h1 className="text-4xl md:text-6xl font-extrabold leading-tight">
-            Bienvenido a <span className="text-gold-medium">Vidrieria Valladares</span>
+      {/* Glass Hero Section */}
+      <div className="relative min-h-screen flex items-center justify-center overflow-hidden">
+        {/* Background Elements */}
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-cyan-500/20 rounded-full blur-3xl animate-pulse" />
+        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-blue-600/20 rounded-full blur-3xl animate-pulse delay-1000" />
+
+        <div className="container mx-auto px-6 relative z-10 text-center">
+          <h1 className="text-5xl md:text-7xl font-display font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-white via-cyan-100 to-slate-300 tracking-tight drop-shadow-2xl mb-8">
+            VIDRIERÍA <br /> VALLADARES
           </h1>
-          <p className="mt-4 text-lg text-gray-300">
-            Calidad y elegancia en cada corte.
+          <p className="text-xl md:text-2xl text-slate-300 max-w-2xl mx-auto font-light leading-relaxed mb-12">
+            Transformamos la luz en elegancia. Soluciones en vidrio y aluminio con acabados de primera clase.
           </p>
-          <div className="mt-8">
-            <Link to="/products">
-              <Button>Ver Nuestro Catálogo</Button>
+
+          <div className="flex flex-col md:flex-row gap-6 justify-center">
+            <Link to="/products" className="px-8 py-4 bg-cyan-ice text-slate-900 font-bold rounded-full shadow-neon hover:scale-105 transition-transform duration-300 tracking-wider">
+              VER CATÁLOGO
+            </Link>
+            <Link to="/products?category=espejos" className="px-8 py-4 glass-card text-white font-bold rounded-full hover:bg-white/10 transition-colors duration-300 tracking-wider border border-white/20">
+              ESPEJOS A MEDIDA
             </Link>
           </div>
         </div>
       </div>
 
-      {/* About Us Section */}
-      <div className="bg-white py-16">
-        <div className="container mx-auto px-6 text-center">
-          <h2 className="text-3xl font-bold text-gray-800 mb-4">Sobre Nosotros</h2>
-          <p className="max-w-2xl mx-auto text-gray-600">
-            En Vidrieria Valladares, nos dedicamos a transformar espacios con soluciones de vidrio innovadoras y de alta calidad. Desde ventanas y puertas hasta espejos y decoraciones personalizadas, nuestro equipo de expertos está comprometido con la excelencia y la satisfacción del cliente.
-          </p>
+      {/* About Us Section (Glass Panel) */}
+      <div className="py-24 relative">
+        <div className="container mx-auto px-6">
+          <div className="glass-panel p-12 rounded-3xl md:mx-20 text-center relative overflow-hidden">
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-cyan-500 to-transparent opacity-50" />
+            <h2 className="text-3xl font-display font-bold text-white mb-6 tracking-wide">SOBRE NOSOTROS</h2>
+            <p className="text-lg text-slate-300 leading-relaxed font-light">
+              En Vidriería Valladares, fusionamos artesanía tradicional con diseño moderno. Nos dedicamos a crear espacios luminosos y sofisticados mediante soluciones personalizadas en vidrio y aluminio. Desde ventanas panorámicas hasta acabados arquitectónicos, nuestro compromiso es la perfección.
+            </p>
+          </div>
         </div>
       </div>
 
       {/* Featured Products Section */}
-      <div className="bg-gray-100 py-16">
+      <div className="py-24 pb-32">
         <div className="container mx-auto px-6">
-          <h2 className="text-3xl font-bold text-center text-gray-800 mb-8">Productos Destacados</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <h2 className="text-4xl font-display font-bold text-center text-white mb-16 text-glow">
+            DESTACADOS
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
             {featuredProducts.length > 0 ? (
               featuredProducts.map((product) => (
                 <ProductCard key={product.id} product={product} />
               ))
             ) : (
-              <p className="text-center col-span-3">No hay productos destacados en este momento.</p>
+              <div className="col-span-full text-center">
+                <p className="text-slate-400 text-lg">Cargando destacados...</p>
+              </div>
             )}
           </div>
         </div>
