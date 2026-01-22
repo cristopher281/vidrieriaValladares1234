@@ -110,6 +110,10 @@ app.get('/api/products/:id', async (req, res) => {
  * Campos: name, price, description, category, image (archivo)
  */
 app.post('/api/products', requireAuth, upload.single('image'), async (req, res) => {
+  console.log('📝 POST /api/products request received');
+  console.log('Body:', req.body);
+  console.log('File:', req.file ? `Yes (${req.file.originalname})` : 'No');
+
   const { name, description, price, category } = req.body;
   const file = req.file;
 

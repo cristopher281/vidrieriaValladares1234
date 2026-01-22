@@ -1,1 +1,65 @@
 @import "tailwindcss";
+
+@theme {
+    --font-sans: 'Inter', sans-serif;
+    --font-display: 'Montserrat', sans-serif;
+
+    --color-slate-deep: #0f172a;
+    --color-slate-lighter: #1e293b;
+    --color-cyan-ice: #e0f2fe;
+    --color-cyan-neon: #0ea5e9;
+    --color-silver-brushed: #cbd5e1;
+
+    --background-image-luxury-gradient: radial-gradient(circle at 50% 0%, #1e293b 0%, #0f172a 100%);
+    --background-image-glass-shine: linear-gradient(145deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.03) 100%);
+
+    --shadow-glass: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+    --shadow-neon: 0 0 10px rgba(14, 165, 233, 0.5), 0 0 20px rgba(14, 165, 233, 0.3);
+
+    --backdrop-blur-xs: 2px;
+}
+
+@layer utilities {
+    .glass-panel {
+        @apply bg-slate-900/40 backdrop-blur-xl border border-white/10 shadow-glass;
+    }
+
+    .glass-card {
+        @apply bg-white/5 backdrop-blur-md border border-white/10 shadow-lg transition-all duration-300;
+    }
+
+    .glass-card:hover {
+        @apply bg-white/10 border-cyan-500/30 shadow-neon transform -translate-y-1;
+    }
+
+    .text-glow {
+        text-shadow: 0 0 10px rgba(224, 242, 254, 0.5);
+    }
+
+    .glass-btn {
+        @apply px-6 py-2 rounded-full font-semibold transition-all duration-300 border border-white/20 hover:border-cyan-400/50 hover:shadow-neon backdrop-blur-sm;
+    }
+}
+
+/* Smooth Scrolling for luxurious feel */
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    /* Dynamic refined background */
+    background: radial-gradient(circle at top left, #1e293b, #0f172a);
+    background-attachment: fixed;
+    min-height: 100vh;
+    color: #e2e8f0;
+    font-family: 'Inter', sans-serif;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+    font-family: 'Montserrat', sans-serif;
+}

@@ -40,11 +40,19 @@ const AdminPage = () => {
   };
 
   const handleSubmit = async (formData) => {
+    let result;
     if (editingProduct) {
-      await updateProduct(editingProduct.id, formData, token);
+      result = await updateProduct(editingProduct.id, formData, token);
     } else {
-      await createProduct(formData, token);
+      result = await createProduct(formData, token);
     }
+
+    if (result.error) {
+      alert('Error al guardar el producto: ' + (result.error.message || result.error));
+      console.error('Error in save:', result.error);
+      return;
+    }
+
     fetchProducts();
     setShowForm(false);
     setEditingProduct(null);
@@ -56,31 +64,38 @@ const AdminPage = () => {
   };
 
   return (
-    <div className="container mx-auto px-6 py-12">
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold text-gray-800">Panel de Administración</h1>
-        <div>
-          <Button onClick={handleCreate} className="mr-4">
-            Crear Producto
-          </Button>
-          <Button onClick={handleSignOut} className="bg-red-600 hover:bg-red-70h00">
-            Cerrar Sesión
-          </Button>
+    <div className="min-h-screen pt-32 pb-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto">
+        <div className="glass-panel rounded-2xl p-8 mb-8 flex flex-col md:flex-row justify-between items-center gap-6">
+          <div>
+            <h1 className="text-3xl font-display font-bold text-white mb-2">Panel de Administración</h1>
+            <p className="text-slate-400">Gestiona tu inventario con elegancia.</p>
+          </div>
+          <div className="flex gap-4">
+            <Button onClick={handleCreate} variant="primary">
+              + Nuevo Producto
+            </Button>
+            <Button onClick={handleSignOut} variant="danger">
+              Cerrar Sesión
+            </Button>
+          </div>
         </div>
+
+        <div className="glass-panel rounded-2xl overflow-hidden p-6">
+          <ProductTable products={products} onEdit={handleEdit} onDelete={handleDelete} />
+        </div>
+
+        {showForm && (
+          <ProductForm
+            product={editingProduct}
+            onSubmit={handleSubmit}
+            onCancel={() => {
+              setShowForm(false);
+              setEditingProduct(null);
+            }}
+          />
+        )}
       </div>
-
-      <ProductTable products={products} onEdit={handleEdit} onDelete={handleDelete} />
-
-      {showForm && (
-        <ProductForm
-          product={editingProduct}
-          onSubmit={handleSubmit}
-          onCancel={() => {
-            setShowForm(false);
-            setEditingProduct(null);
-          }}
-        />
-      )}
     </div>
   );
 };

@@ -13,9 +13,10 @@ export default {
       colors: {
         // Luxury Palette
         'slate-deep': '#0f172a',    // Background Base
+        'slate-lighter': '#1e293b', // Card/Section Base
         'cyan-ice': '#e0f2fe',      // High Accents
+        'cyan-neon': '#0ea5e9',     // Primary Action
         'silver-brushed': '#cbd5e1',// Borders/Secondary
-        'primary': '#0ea5e9',       // Action Color (Sky-500 equivalent)
       },
       backgroundImage: {
         'luxury-gradient': 'radial-gradient(circle at 50% 0%, #1e293b 0%, #0f172a 100%)',
@@ -24,6 +25,9 @@ export default {
       boxShadow: {
         'glass': '0 8px 32px 0 rgba(0, 0, 0, 0.37)',
         'neon': '0 0 10px rgba(14, 165, 233, 0.5), 0 0 20px rgba(14, 165, 233, 0.3)',
+      },
+      backdropBlur: {
+        'xs': '2px',
       }
     },
   },
