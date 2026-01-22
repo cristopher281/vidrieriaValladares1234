@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { signIn } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
-import Button from '../components/Button';
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');
@@ -27,43 +26,83 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="container mx-auto px-6 py-12">
-      <div className="max-w-md mx-auto bg-white p-8 rounded-lg shadow-md">
-        <h1 className="text-2xl font-bold text-gray-800 mb-6 text-center">Iniciar Sesión</h1>
-        <form onSubmit={handleLogin}>
-          {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
-          <div className="mb-4">
-            <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="email">
-              Email
-            </label>
-            <input
-              type="email"
-              id="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-              required
-            />
+    <div className="min-h-screen bg-bg-primary flex items-center justify-center px-6">
+      <div className="w-full max-w-md">
+        {/* Card */}
+        <div className="bg-bg-secondary rounded-2xl border border-border-subtle p-8 lg:p-10">
+          {/* Header */}
+          <div className="text-center mb-8">
+            <h1 className="text-2xl font-display font-medium text-accent-white">
+              Iniciar Sesión
+            </h1>
+            <p className="mt-2 text-sm text-text-secondary">
+              Accede al panel de administración
+            </p>
           </div>
-          <div className="mb-6">
-            <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="password">
-              Contraseña
-            </label>
-            <input
-              type="password"
-              id="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 mb-3 leading-tight focus:outline-none focus:shadow-outline"
-              required
-            />
-          </div>
-          <div className="flex items-center justify-between">
-            <Button type="submit" disabled={loading}>
-              {loading ? 'Iniciando...' : 'Iniciar Sesión'}
-            </Button>
-          </div>
-        </form>
+
+          {/* Form */}
+          <form onSubmit={handleLogin} className="space-y-6">
+            {/* Error Message */}
+            {error && (
+              <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-sm">
+                {error}
+              </div>
+            )}
+
+            {/* Email Field */}
+            <div>
+              <label className="block text-sm font-medium text-text-secondary mb-2" htmlFor="email">
+                Correo electrónico
+              </label>
+              <input
+                type="email"
+                id="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full px-4 py-3 bg-bg-tertiary border border-border-subtle rounded-xl text-accent-white placeholder-text-muted focus:outline-none focus:border-accent-ice/50 focus:ring-1 focus:ring-accent-ice/20 transition-all duration-300"
+                placeholder="admin@ejemplo.com"
+                required
+              />
+            </div>
+
+            {/* Password Field */}
+            <div>
+              <label className="block text-sm font-medium text-text-secondary mb-2" htmlFor="password">
+                Contraseña
+              </label>
+              <input
+                type="password"
+                id="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full px-4 py-3 bg-bg-tertiary border border-border-subtle rounded-xl text-accent-white placeholder-text-muted focus:outline-none focus:border-accent-ice/50 focus:ring-1 focus:ring-accent-ice/20 transition-all duration-300"
+                placeholder="••••••••"
+                required
+              />
+            </div>
+
+            {/* Submit Button */}
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full btn-primary disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            >
+              {loading ? (
+                <>
+                  <div className="w-5 h-5 border-2 border-bg-primary/30 border-t-bg-primary rounded-full animate-spin" />
+                  <span>Iniciando...</span>
+                </>
+              ) : (
+                <span>Iniciar Sesión</span>
+              )}
+            </button>
+          </form>
+        </div>
+
+        {/* Footer */}
+        <p className="mt-8 text-center text-sm text-text-muted">
+          © {new Date().getFullYear()} Vidriería Valladares
+        </p>
       </div>
     </div>
   );

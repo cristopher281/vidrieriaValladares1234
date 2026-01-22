@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import Button from '../Button';
 
 const ProductForm = ({ product, onSubmit, onCancel }) => {
   const [formData, setFormData] = useState({
@@ -19,7 +18,6 @@ const ProductForm = ({ product, onSubmit, onCancel }) => {
         category: product.category,
         description: product.description || '',
       });
-      // Ensure we don't carry over old image file objects when switching products
       setImageFile(null);
       setPreviewUrl(null);
     }
@@ -51,27 +49,31 @@ const ProductForm = ({ product, onSubmit, onCancel }) => {
     onSubmit(data);
   };
 
+  const inputStyles = "w-full px-4 py-3 bg-bg-tertiary border border-border-subtle rounded-xl text-accent-white placeholder-text-muted focus:outline-none focus:border-accent-ice/50 focus:ring-1 focus:ring-accent-ice/20 transition-all duration-300";
+
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
       {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-slate-900/80 backdrop-blur-sm transition-opacity"
+        className="absolute inset-0 bg-bg-primary/90 backdrop-blur-sm"
         onClick={onCancel}
-      ></div>
+      />
 
       {/* Modal */}
-      <div className="relative w-full max-w-2xl bg-slate-800/90 border border-white/10 rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-300">
+      <div className="relative w-full max-w-2xl bg-bg-secondary border border-border-subtle rounded-2xl shadow-elevated overflow-hidden">
 
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-white/10 bg-white/5">
-          <h2 className="text-xl font-display font-bold text-white">
+        <div className="flex items-center justify-between px-6 py-5 border-b border-border-subtle">
+          <h2 className="text-xl font-display font-medium text-accent-white">
             {product ? 'Editar Producto' : 'Nuevo Producto'}
           </h2>
           <button
             onClick={onCancel}
-            className="text-slate-400 hover:text-white transition-colors"
+            className="w-8 h-8 flex items-center justify-center rounded-full text-text-secondary hover:text-accent-white hover:bg-bg-tertiary transition-all duration-300"
           >
-            <span className="text-2xl">&times;</span>
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
           </button>
         </div>
 
@@ -80,9 +82,11 @@ const ProductForm = ({ product, onSubmit, onCancel }) => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
             {/* Left Column: Image Upload */}
-            <div className="space-y-4">
-              <label className="block text-sm font-medium text-slate-300">Imagen del Producto</label>
-              <div className="relative group cursor-pointer border-2 border-dashed border-slate-600 rounded-xl h-64 flex flex-col items-center justify-center bg-slate-900/50 hover:border-cyan-500/50 hover:bg-slate-900/80 transition-all">
+            <div className="space-y-3">
+              <label className="block text-sm font-medium text-text-secondary">
+                Imagen del Producto
+              </label>
+              <div className="relative group cursor-pointer border-2 border-dashed border-border-subtle rounded-2xl h-64 flex flex-col items-center justify-center bg-bg-tertiary/50 hover:border-accent-ice/30 hover:bg-bg-tertiary transition-all duration-300">
                 <input
                   type="file"
                   name="image"
@@ -94,11 +98,20 @@ const ProductForm = ({ product, onSubmit, onCancel }) => {
                 {previewUrl ? (
                   <img src={previewUrl} alt="Preview" className="h-full w-full object-cover rounded-xl" />
                 ) : product?.image_url ? (
-                  <img src={`http://localhost:3000${product.image_url}`} alt="Current" className="h-full w-full object-cover rounded-xl" />
+                  <img
+                    src={product.image_url.startsWith('http') ? product.image_url : `http://localhost:3000${product.image_url}`}
+                    alt="Current"
+                    className="h-full w-full object-cover rounded-xl"
+                  />
                 ) : (
                   <div className="text-center p-4">
-                    <span className="text-4xl mb-2 block">📷</span>
-                    <span className="text-slate-400 text-sm">Click para subir imagen</span>
+                    <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-bg-secondary flex items-center justify-center border border-border-subtle">
+                      <svg className="w-6 h-6 text-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                    </div>
+                    <p className="text-text-secondary text-sm">Click para subir imagen</p>
+                    <p className="text-text-muted text-xs mt-1">PNG, JPG hasta 5MB</p>
                   </div>
                 )}
               </div>
@@ -107,67 +120,85 @@ const ProductForm = ({ product, onSubmit, onCancel }) => {
             {/* Right Column: Details */}
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1" htmlFor="name">Nombre</label>
+                <label className="block text-sm font-medium text-text-secondary mb-2" htmlFor="name">
+                  Nombre
+                </label>
                 <input
                   type="text"
                   name="name"
                   value={formData.name}
                   onChange={handleChange}
-                  className="w-full bg-slate-900/50 border border-slate-600 rounded-lg px-4 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-all"
+                  className={inputStyles}
                   placeholder="Ej: Espejo Led"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1" htmlFor="price">Precio (Lps)</label>
-                <div className="relative">
-                  <span className="absolute left-3 top-2.5 text-slate-500">L.</span>
-                  <input
-                    type="number"
-                    name="price"
-                    value={formData.price}
-                    onChange={handleChange}
-                    className="w-full bg-slate-900/50 border border-slate-600 rounded-lg pl-8 pr-4 py-2.5 text-white focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-all"
-                    placeholder="0.00"
-                    required
-                  />
-                </div>
+                <label className="block text-sm font-medium text-text-secondary mb-2" htmlFor="price">
+                  Precio ($)
+                </label>
+                <input
+                  type="number"
+                  name="price"
+                  value={formData.price}
+                  onChange={handleChange}
+                  className={inputStyles}
+                  placeholder="0.00"
+                  required
+                />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1" htmlFor="category">Categoría</label>
-                <input
-                  type="text"
+                <label className="block text-sm font-medium text-text-secondary mb-2" htmlFor="category">
+                  Categoría
+                </label>
+                <select
                   name="category"
                   value={formData.category}
                   onChange={handleChange}
-                  className="w-full bg-slate-900/50 border border-slate-600 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-all"
-                  placeholder="Ej: Espejos"
+                  className={inputStyles}
                   required
-                />
+                >
+                  <option value="">Seleccionar categoría</option>
+                  <option value="Ventanas">Ventanas</option>
+                  <option value="Puertas">Puertas</option>
+                  <option value="Espejos">Espejos</option>
+                  <option value="Decoración">Decoración</option>
+                </select>
               </div>
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-1" htmlFor="description">Descripción</label>
+            <label className="block text-sm font-medium text-text-secondary mb-2" htmlFor="description">
+              Descripción
+            </label>
             <textarea
               name="description"
               value={formData.description}
               onChange={handleChange}
-              className="w-full bg-slate-900/50 border border-slate-600 rounded-lg px-4 py-2.5 text-white focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-all"
+              className={inputStyles}
               rows="3"
-            ></textarea>
+              placeholder="Describe el producto..."
+            />
           </div>
 
-          <div className="flex justify-end gap-3 pt-4 border-t border-white/10">
-            <Button type="button" onClick={onCancel} variant="secondary">
+          {/* Actions */}
+          <div className="flex justify-end gap-3 pt-4 border-t border-border-subtle">
+            <button
+              type="button"
+              onClick={onCancel}
+              className="px-6 py-3 text-sm font-medium tracking-wider rounded-full border border-border-subtle text-text-secondary hover:text-accent-white hover:border-border-light transition-all duration-300"
+            >
               Cancelar
-            </Button>
-            <Button type="submit" variant="primary">
+            </button>
+            <button
+              type="submit"
+              className="btn-primary"
+            >
               {product ? 'Guardar Cambios' : 'Crear Producto'}
-            </Button>
+            </button>
           </div>
         </form>
       </div>

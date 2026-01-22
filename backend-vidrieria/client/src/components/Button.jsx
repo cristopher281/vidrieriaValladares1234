@@ -1,13 +1,13 @@
 import React from 'react';
 
 const Button = ({ children, onClick, type = 'button', className = '', variant = 'primary', ...props }) => {
-  const baseStyles = 'inline-flex items-center justify-center px-6 py-3 text-sm font-semibold tracking-wide rounded-lg shadow-sm transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900 disabled:opacity-50 disabled:cursor-not-allowed transform active:scale-95';
+  const baseStyles = 'inline-flex items-center justify-center px-6 py-3 text-sm font-medium tracking-wider rounded-full transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-bg-primary disabled:opacity-50 disabled:cursor-not-allowed';
 
   const variants = {
-    primary: 'border border-transparent text-white bg-cyan-600 hover:bg-cyan-500 hover:shadow-neon focus:ring-cyan-500',
-    secondary: 'border border-white/20 text-slate-200 bg-white/5 hover:bg-white/10 hover:border-cyan-400/50 hover:text-white backdrop-blur-sm focus:ring-slate-500',
-    danger: 'border border-transparent text-white bg-red-600/80 hover:bg-red-500 hover:shadow-lg focus:ring-red-500',
-    glass: 'glass-btn text-cyan-ice hover:text-white',
+    primary: 'bg-accent-white text-bg-primary hover:shadow-glow hover:scale-105 focus:ring-accent-white',
+    secondary: 'border border-border-light text-text-secondary bg-transparent hover:bg-accent-white/5 hover:border-accent-white/30 hover:text-accent-white focus:ring-border-light',
+    danger: 'border border-red-500/30 text-red-400 bg-transparent hover:bg-red-500/10 hover:border-red-500/50 focus:ring-red-500',
+    ghost: 'text-text-secondary hover:text-accent-white focus:ring-transparent',
   };
 
   return (
